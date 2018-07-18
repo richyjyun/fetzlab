@@ -1,0 +1,28 @@
+function SpikeMap(Mani,spk,fs)
+
+% 1 is RU (radial (up) is positive) and 2 is FE (flexion (left) is positive)
+Mani.data(2,:) = -Mani.data(2,:); % convert for left/right
+
+FE_lim = [min(Mani.data(2,:)),max(Mani.data(2,:))];
+RU_lim = [min(Mani.data(1,:)),max(Mani.data(1,:))];
+
+dloc = 0.1;
+window = 0; % can modify to get an average of the window of manip data rather than the instantaneous
+range = -window*fs:window*fs;
+
+FE_bins = FE_lim(1):dloc:FE_lim(2);
+RU_bins = RU_lim(1):dloc:RU_lim(2);
+
+spk = round(spk);
+
+map = zeros(length(FE_bins),length(RU_bins));
+for s = 1:length(spk)
+    loc = [mean(Mani.data(2,spk(s)+range));mean(Mani.data(1,spk(s)+range))];
+    inds = [find(loc(1)>FE_bins,1,'last'),find(loc(2)>RU_bins,1,'last')];
+    map(inds(1),inds(2)) = map(inds(1),inds(2))+1; 
+end
+
+
+
+
+end

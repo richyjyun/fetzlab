@@ -1,0 +1,18 @@
+function getPercentiles(amp,phase,prcnt)
+
+collected = zeros(length(prcnt)-1,size(phase,1)); 
+strength = zeros(length(prcnt)-1,size(phase,1));
+for p = 1:length(prcnt)-1
+    for ang = 1:size(phase,1)
+        p1 = prctile(amp(ang,:),prcnt(p)); p2 = prctile(amp(ang,:),prcnt(p+1));
+        inds = amp(ang,:) > p1 & amp(ang,:) < p2;
+        
+        % mean of circular values. kind of undoing the "angle"
+        % function when saving phase
+        r = sum(exp(1j*Phase(ang,inds)));
+        collected(p,ang) = angle(r);
+        strength(p,ang) = abs(r);
+    end
+end
+
+end

@@ -1,0 +1,33 @@
+clear;
+
+%% Load in proper times
+tankpath = 'Y:\~NeuroWest\Spanky\SpikeTrigger-180122-105223\';
+% tankpath = 'Y:\~NeuroWest\Spanky\CycleTriggered-170710-143939\';
+% tankpath = 'Y:\~NeuroWest\Spanky\Connectivity-180207-131758\';
+blockname = 'Spanky-180628-133756';
+
+Channels = [81,83];
+
+
+figure;
+for b = 1:size(blockname,1)
+    
+    Snips = TDT2mat([tankpath,blockname],'TYPE',3);
+    Snips = Snips.snips.eNe1;
+    
+    inds = Snips.chan == Channels(chn);
+    ts = Snips.ts(inds);
+    trig = round(ts*fs0.
+    
+    for c = 1:96
+        LFP = TDT2mat([tankpath,blockname],'TYPE',4,'STORE','LFPs','CHANNEL',c);
+        
+        
+    end
+
+end
+
+
+
+
+
