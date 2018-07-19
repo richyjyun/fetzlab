@@ -1,16 +1,56 @@
-clear; close all;
+function [fx,fy] = phaseGradient(phase,k)
 
-%% Load in proper times
-tankpath = 'Y:\~NeuroWest\Spanky\RandomStim-180314-124242\';
-% tankpath = 'Y:\~NeuroWest\Spanky\SpikeTrigger-180122-105223\';
-% tankpath = 'Y:\~NeuroWest\Spanky\IFNN\';
-% tankpath = 'Y:\~NeuroWest\Spanky\CycleTriggered-170710-143939\';
-% tankpath = 'Y:\~NeuroWest\Spanky\Connectivity-180207-131758\';
-blockname = 'Spanky-180717-135403';
-times = [0,10*60];
+    if ~exist('k','var')
+        k = 2;
+    end
 
-T1 = times(1); T2 = times(2);
-LFPs = TDT2mat([tankpath,blockname],'T1',T1,'T2',T2,'TYPE',4,'STORE','LFPs'); LFPs = LFPs.streams.LFPs;
-fs = LFPs.fs;
+    gradient = nan(size(phase));
+    
+    for y = 1:size(phase,1)
+        
+        for x = 1:size(phase,2)
+            
+            if(isnan(phase(y,x))), continue; end
+            
+            gradient(y,x) = 0;
+            
+            for i = -k:k
+                              
+                for j = -k:k
+                    
+                    if(i==0 && j==0), continue; end
+                    
+                    if(x+i<=0 || x+i>size(phase,2) || y+j<=0 || y+j>size(phase,1)), continue; end
+                    
+                    if(isnan(phase(y+j,x+i))), continue; end
+                    
+                    p = phase(y+j,x+i)-phase(y,x);
+                    
+                    if(sign(p))
+                        div = -pi;
+                    else
+                        div = pi;
+                    end
+                    
+                    p = mod(p,div);
+                    
+                    d = sqrt(i^2+j^2);
+                    
+                    a = atan2(-j,i); % need negative j just because of how rows/columns are defined 
+
+                    gradient(y,x) = gradient(y,x) + (p/d)*exp(1j*a);
+                                        
+                end
+                
+            end
+                        
+        end
+        
+    end
+    
+    fx = real(gradient);
+    fy = -imag(gradient); % need to be negative to make it display properly (imagesc flips yaxis)
+    
+end
 
 
