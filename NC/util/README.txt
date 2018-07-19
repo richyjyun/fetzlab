@@ -1,0 +1,1 @@
+Mainly code written by Larry Shupe for loading and simple manipulation of Neurochip3 data
