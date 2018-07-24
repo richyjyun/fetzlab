@@ -39,9 +39,12 @@ grid([1,1,10,10],[1,10,1,10],:) = nan;
 vidfile = VideoWriter(fullfile('F:\S\Packets\Video',[blockname,'_PhaseGrad2.mp4']),'MPEG-4');
 open(vidfile);
 
-figure; colormap hsv; clims = [-pi,pi]; 
-for i = 6000:1:7000
-    imagesc(grid(:,:,i),clims); axis off;
+f = figure; colormap hsv; clims = [-pi,pi]; 
+for i = 4050:1:5000
+
+    im = imagesc(grid(:,:,i),clims); axis off;
+    set(im,'AlphaData',~isnan(grid(:,:,i)))
+    
     [fx,fy] = phaseGradient(grid(:,:,i),2);
     hold on; quiver(1:10,1:10,fx,fy,'color','k','linewidth',1,'autoscalefactor',0.5);%,'autoscale','off');
 %     hold on; contour(1:10,1:10,grid(:,:,i));
@@ -55,15 +58,21 @@ for i = 6000:1:7000
 
     quiver([3,8],[3,8],quadx,quady,'color','w','linewidth',5,'autoscalefactor',0.5);
     
-    colorbar;
-    hold off;
-    title(i/fs);
+    c = colorbar; set(c,'ticks',[-pi,-pi/2,0,pi/2,pi],'ticklabels',[{'-\pi'},{'-\pi/2'},{'0'},{'\pi/2'},{'\pi'}])
 
+    hold off;
+    title(i);%/fs);
+    
+    if(~ishandle(f))
+        break;
+    end
+    
     drawnow
-    
-    F = getframe(gcf);
-    writeVideo(vidfile,F);
-    
+    pause(0.5);
+%     
+%     F = getframe(gcf);
+%     writeVideo(vidfile,F);
+%     
 end
 
 close(vidfile);
