@@ -18,7 +18,7 @@ function fig = stLFP(varargin)
 % Outputs
 %   fig         array of figures, returned if packet is empty
 %
-% RJY 07/16/2018
+% RJY 07/16/2018 
 
 %% Set up name/value pairs
 
