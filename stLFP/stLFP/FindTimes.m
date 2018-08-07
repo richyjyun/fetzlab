@@ -1,12 +1,13 @@
 clear; close all;
 
 %% Load in proper times
-tankpath = 'Y:\~NeuroWest\Spanky\RandomStim-180314-124242\';
-% tankpath = 'Y:\~NeuroWest\Spanky\SpikeTrigger-180122-105223\';
+% tankpath = 'Y:\~NeuroWest\Spanky\RandomStim-180314-124242\';
+tankpath = 'Y:\~NeuroWest\Spanky\SpikeTrigger-180122-105223\';
 % tankpath = 'Y:\~NeuroWest\Spanky\IFNN\';
 % tankpath = 'Y:\~NeuroWest\Spanky\CycleTriggered-170710-143939\';
 % tankpath = 'Y:\~NeuroWest\Spanky\Connectivity-180207-131758\';
-blockname = 'Spanky-180717-135403';
+% tankpath = 'Y:\~NeuroWest\Spanky\SpankyUpstairs\';
+blockname = 'Spanky-180730-125600';
 TT = TDT2mat([tankpath,blockname],'TYPE',2);
 Dscm = TT.epocs.Dscm;
 [val,ind] = findpeaks(Dscm.data); 
@@ -44,10 +45,10 @@ for i = 1:length(Channels)
     end
 end
 
-%% For cleaned stlfp
+%% For cleaned stlfp code
 tic;
-stLFP('tankpath',tankpath,'blockname',blockname,'trigChns',[81,83],'codes',[1,1],...
-    'times',times,'stimChn',78,'filt',[15,50])
+stLFP('tankpath',tankpath,'blockname',blockname,'trigChns',[81],'codes',[1],...
+    'times',times,'stimChn',78,'filt',[])
 toc;
 
 

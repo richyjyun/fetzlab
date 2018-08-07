@@ -9,11 +9,11 @@ date = '20180604';
 % Arrange into a struct. First row is the fields
 SL = struct;
 for i = 2:size(vals,1)
-    if(strcmp(vals(i,2),date))
+%     if(strcmp(vals(i,2),date))
         for j = 1:size(vals,2)
-            SL.(char(vals(1,j))) = char(vals{i,j});
+            SL(i-1).(char(vals(1,j))) = char(vals{i,j});
         end
-    end
+%     end
 end
 
 %% Get channels and corresponding sort codes

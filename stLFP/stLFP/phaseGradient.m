@@ -23,9 +23,9 @@ for y = 1:size(phase,1)
     
     for x = 1:size(phase,2)
         
-        if(isnan(phase(y,x))), continue; end
+        if(any(isnan(phase(y,x,:)))), continue; end
         
-        gradient(y,x) = 0;
+        gradient(y,x,:) = 0;
         
         for i = -k:k
             
@@ -35,15 +35,12 @@ for y = 1:size(phase,1)
                 
                 if(x+i<=0 || x+i>size(phase,2) || y+j<=0 || y+j>size(phase,1)), continue; end
                 
-                if(isnan(phase(y+j,x+i))), continue; end
+                if(any(isnan(phase(y+j,x+i,:)))), continue; end
                 
-                p = phase(y+j,x+i)-phase(y,x);
+                p = squeeze(phase(y+j,x+i,:)-phase(y,x,:));
                 
-                if(sign(p))
-                    div = -pi;
-                else
-                    div = pi;
-                end
+                div = sign(p).*pi.*ones(length(p),1);
+                div(div==0) = pi;
                 
                 p = mod(p,div);
                 
@@ -51,7 +48,9 @@ for y = 1:size(phase,1)
                 
                 a = atan2(-j,i); % need negative j just because of how rows/columns are defined
                 
-                gradient(y,x) = gradient(y,x) + (p/d)*exp(1j*a);
+                tempGradient(1,1,:) = (p/d)*exp(1j*a);
+                
+                gradient(y,x,:) = gradient(y,x,:) + tempGradient;
                 
             end
             

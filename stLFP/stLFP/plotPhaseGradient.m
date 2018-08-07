@@ -11,9 +11,9 @@ tankpath = 'Y:\~NeuroWest\Spanky\RandomStim-180314-124242\';
 % tankpath = 'Y:\~NeuroWest\Spanky\CycleTriggered-170710-143939\';
 % tankpath = 'Y:\~NeuroWest\Spanky\Connectivity-180207-131758\';
 blockname = 'Spanky-180717-135403';
-times = [0,10*60];
+times = [0,20*60];
 
-T1 = times(1); T2 = times(2);
+T1 = times(1,1); T2 = times(1,2);
 LFPs = TDT2mat([tankpath,blockname],'T1',T1,'T2',T2,'TYPE',4,'STORE','LFPs'); LFPs = LFPs.streams.LFPs;
 fs = LFPs.fs;
 
@@ -40,41 +40,67 @@ vidfile = VideoWriter(fullfile('F:\S\Packets\Video',[blockname,'_PhaseGrad2.mp4'
 open(vidfile);
 
 f = figure; colormap hsv; clims = [-pi,pi]; 
-for i = 4050:1:5000
+Fx = []; Fy = [];
+for i = 1:size(grid,3)
 
-    im = imagesc(grid(:,:,i),clims); axis off;
-    set(im,'AlphaData',~isnan(grid(:,:,i)))
-    
+%     im = imagesc(grid(:,:,i),clims); axis off;
+%     set(im,'AlphaData',~isnan(grid(:,:,i)))
+%     
     [fx,fy] = phaseGradient(grid(:,:,i),2);
-    hold on; quiver(1:10,1:10,fx,fy,'color','k','linewidth',1,'autoscalefactor',0.5);%,'autoscale','off');
-%     hold on; contour(1:10,1:10,grid(:,:,i));
-    x = [1,1,6,6]; y = [1,6,1,6];
-    
-    % generalize matrix widths? 
-    quadx = mat2cell(fx,[5,5],[5,5]);
-    quadx = cellfun(@(x) nanmean(x(:)),quadx);
-    quady = mat2cell(fy,[5,5],[5,5]);
-    quady = cellfun(@(x) nanmean(x(:)),quady);
-
-    quiver([3,8],[3,8],quadx,quady,'color','w','linewidth',5,'autoscalefactor',0.5);
-    
-    c = colorbar; set(c,'ticks',[-pi,-pi/2,0,pi/2,pi],'ticklabels',[{'-\pi'},{'-\pi/2'},{'0'},{'\pi/2'},{'\pi'}])
-
-    hold off;
-    title(i);%/fs);
-    
-    if(~ishandle(f))
-        break;
-    end
-    
-    drawnow
-    pause(0.5);
+    Fx(:,:,end+1) = fx; Fy(:,:,end+1) = fy;
+%     hold on; quiver(1:10,1:10,fx,fy,'color','k','linewidth',1,'autoscalefactor',0.5);%,'autoscale','off');
+% %     hold on; contour(1:10,1:10,grid(:,:,i));
+%     x = [1,1,6,6]; y = [1,6,1,6];
 %     
-%     F = getframe(gcf);
-%     writeVideo(vidfile,F);
+%     % calculating quadrants
+%     % generalize matrix widths? 
+%     quadx = mat2cell(fx,[5,5],[5,5]);
+%     quadx = cellfun(@(x) nanmean(x(:)),quadx);
+%     quady = mat2cell(fy,[5,5],[5,5]);
+%     quady = cellfun(@(x) nanmean(x(:)),quady);
+% 
+%     quiver([3,8],[3,8],quadx,quady,'color','w','linewidth',5,'autoscalefactor',0.5);
 %     
+%     c = colorbar; set(c,'ticks',[-pi,-pi/2,0,pi/2,pi],'ticklabels',[{'-\pi'},{'-\pi/2'},{'0'},{'\pi/2'},{'\pi'}])
+% 
+%     hold off;
+%     title(i);%/fs);
+%     
+%     if(~ishandle(f))
+%         break;
+%     end
+%     
+%     drawnow
+% %     pause(0.5);
+% %     
+% %     F = getframe(gcf);
+% %     writeVideo(vidfile,F);
+% %     
 end
 
-close(vidfile);
+
+f = figure; colormap hsv; clims = [-pi,pi]; 
+
+highBeta = find(abs(h(81,:)) > 2*std(abs(h(81,:))));
+
+highPh = grid(:,:,highBeta); highPh = meanPhase(highPh,3);
+highFx = nansum(Fx(:,:,highBeta),3);
+highFy = nansum(Fy(:,:,highBeta),3);
+
+im = imagesc(highPh,clims); axis off;
+set(im,'AlphaData',~isnan(grid(:,:,i)))
+
+hold on; quiver(1:10,1:10,highFx,highFy,'color','k','linewidth',1,'autoscalefactor',0.5);%,'autoscale','off');
+
+% close(vidfile);
+
+
+
+difference = exp(1j*phase(78,:))-exp(1j*phase(81,:));
+avg = angle(sum(difference));
+
+
+
+
 
 

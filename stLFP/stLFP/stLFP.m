@@ -53,14 +53,19 @@ stimChn = p.Results.stimChn;
 % figures
 fig = zeros(length(trigChns),1);
 for i = 1:length(trigChns)
-    fig(i) = figure('position', [0 0 900 1100], 'paperposition', [-.8 -.6 10 12],'visible','off'); 
+    fig(i) = figure('position', [0 0 900 1100], 'paperposition', [-.8 -.6 10 12],'visible','off');
 end
 
 % plot colors for different times
 colors = 'krbgy';
 
 % packet path
-date = blockname(8:13);
+if(length(blockname) >=13)
+    date = blockname(8:13);
+else
+    date = blockname;
+end
+
 if(isempty(filt))
     f = 'raw';
 else
@@ -79,14 +84,12 @@ for t = 1:size(times,1)
     
     % get all snippets from spike sorting
     Snips = TDT2mat([tankpath,blockname],'T1',T1,'T2',T2,'TYPE',3,'STORE','eNeu'); Snips = Snips.snips.eNe1;
-
+    
     % filter
     if(~isempty(filt))
-        LFPs.data = bpfilt(LFPs.data',filt,LFPs.fs,3)';
+        LFPs.data = bpfilt(LFPs.data',filt,LFPs.fs,5)';
     end
-    
-%     LFPs.data = zscore(LFPs.data')';
-    
+        
     % define variables
     fs = LFPs.fs;
     range = round(-window*fs:1:window*fs);
@@ -112,10 +115,9 @@ for t = 1:size(times,1)
         for j = 1:size(LFPs.data,1)
             d = LFPs.data(j,:);
             d = d(floor(trialinds));
-%             d = zscore(d);
             d = d - mean(d);
             d = mean(d,2);
-            stLFPs(j,:) = zscore(d);
+            stLFPs(j,:) = d;%zscore(d);
         end
         
         %% Whitening
@@ -124,11 +126,11 @@ for t = 1:size(times,1)
             W = E*diag(diag(D).^(-1/2))*E';
             wstLFPs = W*stLFPs(good,:);
             
-%             % maximum method
-%             dif = max(wstLFPs')-min(wstLFPs');
-%             ind = find(dif==max(dif));
+            %             % maximum method
+            %             dif = max(wstLFPs')-min(wstLFPs');
+            %             ind = find(dif==max(dif));
             
-            % Correlation method for matching y scale to compare 
+            % Correlation method for matching y scale to compare
             Corr = [];
             for j = 1:length(good)
                 corr = corrcoef(stLFPs(good(j),:),wstLFPs(j,:));
@@ -139,11 +141,11 @@ for t = 1:size(times,1)
             ratio = (max(stLFPs(good(ind),:)) - min(stLFPs(good(ind),:))) /...
                 (max(wstLFPs(ind,:)) - min(wstLFPs(ind,:)));
             wstLFPs = ratio*wstLFPs;
-    
+            
         else
             wstLFPs = stLFPs;
         end
- 
+        
         
         %% Plot
         yl(i,:,:) = nan(size(LFPs.data,1),2);
@@ -156,7 +158,7 @@ for t = 1:size(times,1)
             yl(i,j,:) = ylim; xlim([-window,window]);
             
         end
-                
+        
     end
 end
 
@@ -164,7 +166,7 @@ end
 for i = 1:length(trigChns)
     
     set(0, 'CurrentFigure', fig(i));
-
+    
     %% Ylim, titles, axes
     YLIM = nanmedian(squeeze(yl(i,:,:)))*1.5;
     

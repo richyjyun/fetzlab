@@ -1,13 +1,125 @@
 tankpath = 'R:\Fetz Lab\neurowest\ARB_spankybackup\OP_DT1_052915\';
 blockname = 'S20160617';
 
-times(1) = 240; times(2) = 110*60;
+times(1) = 10; times(2) = 100*60;
+chn = 53; code = 0;
 
 % Load in relevant data
 T1 = times(1); T2 = times(2);
 % Snips = TDT2mat([tankpath,blockname],'T1',T1,'T2',T2,'TYPE',3,'STORE','eNeu'); Snips = Snips.snips.eNeu;
-BxID = TDT2mat([tankpath,blockname],'T1',T1,'T2',T2,'TYPE',4,'STORE','bxID'); BxID = BxID.streams.bxID;
-LFPs = TDT2mat([tankpath,blockname],'T1',0,'T2',1,'TYPE',4,'STORE','LFPs'); LFPs = LFPs.streams.LFPs;
+% BxID = TDT2mat([tankpath,blockname],'T1',T1,'T2',T2,'TYPE',4,'STORE','bxID'); BxID = BxID.streams.bxID;
+LFPs = TDT2mat([tankpath,blockname],'T1',T1,'T2',T2,'TYPE',4,'STORE','LFPs','Channel',52); LFPs = LFPs.streams.LFPs;
+Mani = TDT2mat([tankpath,blockname],'T1',T1,'T2',T2,'TYPE',4,'STORE','Mani'); Mani = Mani.streams.Mani;
+Snips = TDT2mat([tankpath,blockname],'T1',T1,'T2',T2,'TYPE',3,'STORE','eNeu'); Snips = Snips.snips.eNeu;
+
+%% trying with instantaneous velocity
+Mani.data = [-Mani.data(5,:);Mani.data(3,:)]; % 5 is FE, 3 is RU. same as current set up in needing to flip FE.
+% Mani.data = interp1((1:length(Mani.data))/Mani.fs,Mani.data',(1:length(LFPs.data))/LFPs.fs)';
+smoothwin = 1*Mani.fs;
+Mani.data(1,:) = smooth(Mani.data(1,:)',smoothwin)';
+Mani.data(2,:) = smooth(Mani.data(2,:)',smoothwin)';
+
+% figure;
+% for i = 10001:length(Mani.data(1,:))
+%     subplot(2,1,1)
+%     plot(Mani.data(1,i-5000:i),Mani.data(2,i-5000:i));
+%     subplot(2,1,2)
+%     plot(IDs(1:ceil(i*BxID.fs/Mani.fs)));
+%     pause(0.005);
+% end
+
+vel = diff(Mani.data')';
+ang = atan2(vel(2,:),vel(1,:));
+spd = sqrt(vel(2,:).^2+vel(1,:).^2);
+
+edges = -pi:pi/8:pi;
+
+direction = discretize(ang,edges);
+trialDir = [14,15;...
+            12,13;...
+            10,11;...
+            1,16;...
+            nan,nan;...
+            8,9;...
+            2,3;...
+            4,5;...
+            6,7];
+        
+trialID = [];
+for i = 1:length(trialDir)
+   trialID(direction == trialDir(i,1) | direction == trialDir(i,2)) = i; 
+end
+
+% trialID(spd<0.5*std(spd)) = 0;
+
+trig = Snips.ts(Snips.chan == chn & Snips.sortcode == code);
+
+trigID = trialID(round((trig-T1)*Mani.fs)');
+
+trig = round((trig-T1)*LFPs.fs)';
+
+win = 0.05; % 50ms windows for stLFPs
+range = round(-win*LFPs.fs:1:win*LFPs.fs);
+
+trialinds = repmat(trig, length(range), 1) + repmat(range(:), 1, size(trig,2));
+badInd = floor(trialinds(1,:))<=0 | floor(trialinds(end,:))>length(LFPs.data);
+trialinds(:,badInd) = []; trigID(badInd) = [];
+
+%raw stlfp
+d = LFPs.data;
+d = d(floor(trialinds));
+d = d - mean(d);
+
+figure;     spkInd = find(range==0);
+avg = []; plv = []; pow = [];
+for i = 1:9
+    subplot(3,3,i);
+    inds = trigID==i;
+    temp = d(:,inds);
+    plot(range,mean(temp,2)); title(num2str(sum(inds)));
+end
+
+%filtered stlfp
+Filt = bpfilt(double(LFPs.data),[15,25],LFPs.fs,4);
+d = Filt;
+d = d(floor(trialinds));
+for i = 1:9
+    subplot(3,3,i);
+    inds = trigID==i;
+    temp = d(:,inds);
+    
+    % phase locking value
+    if i==5 || isempty(temp)
+        continue;
+    end
+    
+    plot(range,mean(temp,2));
+    title(num2str(size(temp,2)));
+    
+    h = hilbert(temp);
+    pow(:,i) = mean(abs(h),2);
+    h = angle(h);
+    phases = h(spkInd,:);
+    S = sum(exp(1j*phases));
+    avg(i) = angle(S);
+    plv(i) = abs(S)/length(phases);
+    
+end
+
+good = 1:9; good(5) = [];
+theta = pi:-pi/4:-pi;
+inds = [4,1,2,3,6,9,8,7,4];
+
+figure; polarplot(theta,avg(inds)); title('Avg Phase');
+% rlim([2.2,2.8])
+% rlim([min(avg(inds)),max(avg(inds))]);
+figure; polarplot(theta,plv(inds)); title('PLV');
+
+figure;
+for i = 1:9
+    subplot(3,3,i);
+    plot(pow(:,i));
+end
 
 %% parse Box ID (see google sheets) 
 jitter = 100;
@@ -45,6 +157,16 @@ chn = 58; code = 0;
 win = 0.05; % 50ms windows for stLFPs
 fs = LFPs.fs;
 range = round(-win*fs:1:win*fs);
+
+%% Trial triggered spike hist
+figure;
+for i = 1:9
+    trig = trialStart(trialID == i);
+    
+end
+
+%% Trial triggered LFP
+
 
 %% get stLFP
 stLFP = cell(9,1);
