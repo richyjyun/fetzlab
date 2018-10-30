@@ -6,7 +6,7 @@ for t = 1:size(times,1)
     T2 = times(t,2); %+ window;% get all LFPs
     LFPs = TDT2mat([tankpath,blockname],'T1',T1,'T2',T2,'TYPE',4,'STORE','LFPs'); LFPs = LFPs.streams.LFPs;
     % get all snippets from spike sorting
-    Snips = TDT2mat([tankpath,blockname],'T1',T1,'T2',T2,'TYPE',3,'STORE','eNe1'); Snips = Snips.snips.eNe1;
+%     Snips = TDT2mat([tankpath,blockname],'T1',T1,'T2',T2,'TYPE',3,'STORE','eNe1'); Snips = Snips.snips.eNe1;
     
     % define variables
     fs = LFPs.fs;

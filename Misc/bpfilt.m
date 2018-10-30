@@ -14,6 +14,6 @@ function A = bpfilt (data,freq_range,sr,order)
 
 data = double(data);
 Wn = freq_range./(sr/2);
-[B,C] = butter(order,Wn);
-% [B,C] = ellip(order,.5,20,Wn);
+% [B,C] = butter(order,Wn);
+[B,C] = ellip(order,.5,20,Wn);
 A = filtfilt (B,C,data);

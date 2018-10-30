@@ -33,7 +33,7 @@ save('F:\S\Code\u\CycleTrigLFP.mat','Pre','Post','-v7.3');
 
 %%
 figure; colors = get(gca,'ColorOrder');
-chns = [79,75]; phs = [];
+chns = [64]; phs = [];
 str1 = ''; str2 = ''; Leg = [];
 preStim = []; postStim = [];
 idx = [];

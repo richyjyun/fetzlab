@@ -25,14 +25,14 @@
 %% Set variables
 clear; close all;
 path = 'Y:\~NeuroWest\Spanky\Neurochip';
-day = 'S_20180628_01';
+day = 'S_20180613_07';
 
 %% Load meta data
-[fpath,fname,Channels,fs,session_time] = getMetaData(path,day);
+[fpath,fname,Channels,fs,session_time] = getNCData(path,day);
 
 %% Do functions
 % Sleep
-saveSleep(fpath,fname,session_time,17);
+saveSleep(fpath,fname,session_time,28);
 
 % Sorting 
 saveSortingParams(fpath,fname,Channels,fs,600);

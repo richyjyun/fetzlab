@@ -4,16 +4,16 @@ close all; clear all; pack
 vals = GetGoogleSpreadsheet('1WLfx_3Zq1MdA2T0S6-LUTU0QqMe68vDLM8caA5_lEMc');
 
 % choose day
-date = '20180604';
+date = '20180914';
 
 % Arrange into a struct. First row is the fields
 SL = struct;
 for i = 2:size(vals,1)
-%     if(strcmp(vals(i,2),date))
+    if(strcmp(vals(i,2),date))
         for j = 1:size(vals,2)
-            SL(i-1).(char(vals(1,j))) = char(vals{i,j});
+            SL.(char(vals(1,j))) = char(vals{i,j});
         end
-%     end
+    end
 end
 
 %% Get channels and corresponding sort codes
@@ -30,7 +30,7 @@ for i = 1:length(Channels)
 end
 
 %% Find correct block
-tankpath = 'Y:\~NeuroWest\Spanky\SpikeTrigger-180122-105223\';
+tankpath = 'Y:\~NeuroWest\Spanky\RandomStim-180314-124242\';
 blocks = dir(tankpath);
 blocks = blocks([blocks.isdir]);
 blocks = extractfield(blocks,'name')';
@@ -45,15 +45,17 @@ for b = 1:size(blockname,1)
         delete(packet);
     end
     
-    % find times
+%     % find times
     blockpath = [tankpath,blockname(b,:)];
-    TT = TDT2mat(blockpath,'TYPE',2);
-    Dscm = TT.epocs.Dscm;
-    [val,ind] = findpeaks(Dscm.data);
-    ind = ind(val>1000); val = val(val>1000);
-    times = [ind(1)-val(1),ind(1)];  %just get first epoch
-    times = Dscm.onset(times);
+%     TT = TDT2mat(blockpath,'TYPE',2);
+%     Dscm = TT.epocs.Dscm;
+%     [val,ind] = findpeaks(Dscm.data);
+%     ind = ind(val>1000); val = val(val>1000);
+%     times = [ind(1)-val(1),ind(1)];  %just get first epoch
+%     times = Dscm.onset(times);
     
+    times = [1,20*60];
+
     % load data
     window = 0.1; dt = 0.02; %time window and steps to look at 
     T1 = times(1) - window; T2 = times(2) + window;

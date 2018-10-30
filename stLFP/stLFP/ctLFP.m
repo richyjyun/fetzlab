@@ -1,6 +1,6 @@
-function fig = stLFP(varargin)
+function fig = ctLFP(varargin)
 % Summary
-%   Plots the spike-triggered average of LFPs, triggering from the provided
+%   Plots the beta cycle-triggered average of LFPs, triggering from the provided
 %   channel/code pairs at the epochs specified.
 %
 % Inputs
@@ -27,13 +27,14 @@ p = inputParser;
 addParameter(p,'tankpath',[]);
 addParameter(p,'blockname',[]);
 addParameter(p,'trigChns',[]);
-addParameter(p,'codes',[]);
+% addParameter(p,'codes',[]);
 addParameter(p,'times',[]);
 addParameter(p,'filt',[]);
 addParameter(p,'packet',true);
 addParameter(p,'whiten',false);
 addParameter(p,'window',[0.05,0.05]);
 addParameter(p,'stimChn',[]);
+addParameter(p,'beta',[15,25]);
 addParameter(p,'denoise',true);
 addParameter(p,'z',false);
 
@@ -42,15 +43,17 @@ parse(p,varargin{:});
 tankpath = p.Results.tankpath;
 blockname = p.Results.blockname;
 trigChns = p.Results.trigChns;
-codes = p.Results.codes;
+% codes = p.Results.codes;
 times = p.Results.times;
 filt = p.Results.filt;
 packet = p.Results.packet;
 whiten = p.Results.whiten;
 window = p.Results.window;
 stimChn = p.Results.stimChn;
+beta = p.Results.beta;
 denoise = p.Results.denoise;
 z = p.Results.z;
+
 
 %% Initialize variables
 
@@ -75,7 +78,7 @@ if(isempty(filt))
 else
     f = sprintf('filt%d-%d',filt(1),filt(2));
 end
-fname = fullfile('F:\S\Packets\stLFP', sprintf('%s_%s.ps',date,f));
+fname = fullfile('F:\S\Packets\ctLFP', sprintf('%s_%s.ps',date,f));
 
 %% Loop through each epoch, calculate, and plot
 for t = 1:size(times,1)
@@ -90,17 +93,23 @@ for t = 1:size(times,1)
     % load LFPs
     T1 = times(t,1) + window(1);
     T2 = times(t,2) + window(2);
-    LFPs = TDT2mat([tankpath,blknm],'T1',T1,'T2',T2,'TYPE',4,'STORE','LFPs','verbose',false); 
+    LFPs = TDT2mat([tankpath,blknm],'T1',T1,'T2',T2,'TYPE',4,'STORE','LFPs','verbose',false);
     LFPs = LFPs.streams.LFPs;
     
-    % noise times
+    raw = LFPs.data;
+    
     if(denoise)
         noise = findNoise(LFPs.data(trigChns(1),:),LFPs.fs);
+        LFPs.data(:,noise) = 0;
     end
-        
+    
     % filter
     if(~isempty(filt))
         LFPs.data = bpfilt(LFPs.data',filt,LFPs.fs,3)';
+    end
+    
+    if(denoise)
+        LFPs.data(:,noise) = nan;
     end
     
     % define variables
@@ -116,25 +125,25 @@ for t = 1:size(times,1)
         
         set(0, 'CurrentFigure', fig(i));
         
-        % get all snippets from spike sorting
-        Snips = TDT2mat([tankpath,blknm],'T1',T1,'T2',T2,'TYPE',3,'STORE','eNeu','Channel',trigChns(i),'verbose',false);
-        if(isempty(Snips.snips))
-            continue;
-        end
-        Snips = Snips.snips.eNe1;
+        %% Find times of cycles
+        % Filter trigger channel
+        trig = raw(trigChns(i),:);
+        trig(noise) = 0;
+        trig = bpfilt(trig,beta,fs,3);
+        
+        % Hilbert transform
+        threshold = std(trig);
+        h = hilbert(trig); h(noise) = nan;
+        phase = angle(h); amp = abs(h);
+        [~,trig] = findpeaks(phase);
+        
+        %         amp = amp(trig); threshold = quantile(amp,0.9);
+        %         trig = trig(find(amp>threshold));
         
         %% Get trigger times and define indices
-        trig = (Snips.ts(Snips.chan == trigChns(i) & Snips.sortcode == codes(i))' - T1)*fs;
-        trig = round(trig);
-        
         trialinds = repmat(trig, length(range), 1) + repmat(range(:), 1, size(trig,2));
         trialinds(:,floor(trialinds(1,:))<=0) = [];
         trialinds(:,floor(trialinds(end,:))>length(LFPs.data)) = [];
-        
-        if(denoise)
-            match = ismember(trialinds,noise);
-            trialinds(:,any(match)) = [];
-        end
         
         if(isempty(trialinds))
             trigChns(i) = nan;
@@ -147,7 +156,7 @@ for t = 1:size(times,1)
             d = LFPs.data(j,:);
             d = d(floor(trialinds));
             d = d - mean(d);
-            d = mean(d,2);
+            d = nanmean(d,2);
             if(z)
                 stLFPs(j,:) = zscore(d);
             else
@@ -191,7 +200,6 @@ for t = 1:size(times,1)
             hold on;
             plot(range/fs,wstLFPs(j,:),color); hold on;
             yl(i,j,:) = ylim; xlim([window(1),window(2)]);
-            
         end
         
     end
@@ -228,25 +236,10 @@ for i = 1:length(trigChns)
         
     end
     
-    %% Plot snips and autocorrelation (from last epoch, shouldn't matter)
-    Snips = TDT2mat([tankpath,blknm],'T1',T1,'T2',T2,'TYPE',3,'STORE','eNeu','Channel',trigChns(i));
-    Snips = Snips.snips.eNe1;
-    ind = Snips.chan == trigChns(i) & Snips.sortcode == codes(i);
-    snips = Snips.data(ind,:); sample = floor(linspace(1,size(snips,1), 100));
-    subplot(10,10,91);
-    plot(snips(sample,:)','Color',[0.7,0.7,0.7]); hold on; plot(mean(snips),'k','LineWidth',2);
-    ylim([min(min(snips(sample,:))),max(max(snips(sample,:)))]); axis off;
-    sub_pos = get(gca,'position'); % get subplot axis position
-    set(gca,'position',sub_pos.*[1 1 1.2 1.2]) % stretch its width and height
-    subplot(10,10,100);
-    CrossCorr(Snips.ts(ind), 'ts2',Snips.ts(ind),'binsize', 0.001,'lag',[window(1),window(2)],'suppress_plot',0); axis off;
-    sub_pos = get(gca,'position'); % get subplot axis position
-    set(gca,'position',sub_pos.*[1 1 1.2 1.2]) % stretch its width and height
-    
     %% Title
     axes('Position',[0 0 1 1],'Xlim',[0 1],'Ylim',[0 1],'Box','off','Visible','off','Units','normalized', 'clipping' , 'off');
-    txt = sprintf('%s; Trigger Channel %d, Code %d; %d Triggers, %d to $dms window, Ylim %e, %e',...
-        blknm,trigChns(i),codes(i),sum(ind),round(window(1)*1000),round(window(2)*1000),YLIM(1),YLIM(2));
+    txt = sprintf('%s; Trigger Channel %d; %d Triggers, %d to %dms window, Ylim %e, %e',...
+        blknm,trigChns(i),length(trig),round(window(1)*1000),round(window(2)*1000),YLIM(1),YLIM(2));
     text(0.5, 0.1,txt,...
         'HorizontalAlignment' ,'center','VerticalAlignment', 'top','fontsize',9)
     

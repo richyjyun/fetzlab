@@ -1,7 +1,7 @@
 clear; close all;
 
-fpath = 'Y:\~NeuroWest\Spanky\Neurochip\S_20180605_01\';
-chn = 27; fs = 20000;
+fpath = 'Y:\~NeuroWest\Spanky\Neurochip\S_20180613_07\';
+chn = 28; fs = 20000;
 
 % [data, names, session_time] = nc3data(chn, 0, 100, 20000, [300,3000], path);
 
